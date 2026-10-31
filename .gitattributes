@@ -1,0 +1,7 @@
+# Keep line endings stable across Windows checkouts. Migration SQL files are
+# checksummed, so they must always be stored and built with LF endings.
+* text=auto eol=lf
+*.sql text eol=lf
+*.ico binary
+*.png binary
+*.icns binary

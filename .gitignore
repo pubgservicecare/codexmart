@@ -1,0 +1,51 @@
+# --- Build output ---
+/target/
+/dist/
+/dist-ssr/
+src-tauri/target/
+src-tauri/gen/schemas/
+*.tsbuildinfo
+
+# --- Dependencies ---
+node_modules/
+
+# --- Business data: NEVER commit databases, backups or exports ---
+*.db
+*.db-wal
+*.db-shm
+*.db-journal
+*.sqlite
+*.sqlite3
+*.cxmbak
+*.cxmbak.part
+/backups/
+/data/
+/exports/
+*.csv
+!docs/samples/*.csv
+
+# --- Secrets and local environment ---
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+*.key
+signing/
+
+# --- Logs and caches ---
+*.log
+logs/
+.vite/
+coverage/
+.eslintcache
+
+# --- Editors / OS ---
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
