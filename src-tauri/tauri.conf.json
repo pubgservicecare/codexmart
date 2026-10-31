@@ -1,0 +1,55 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CODE X MART",
+  "mainBinaryName": "CODE X MART",
+  "version": "1.0.0",
+  "identifier": "com.codexmart.pos",
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "CODE X MART",
+        "width": 1366,
+        "height": 820,
+        "minWidth": 1100,
+        "minHeight": 660,
+        "center": true,
+        "maximized": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis"],
+    "publisher": "CODE X MART",
+    "copyright": "Copyright (c) 2026 CODE X MART",
+    "category": "Business",
+    "shortDescription": "CODE X MART - Retail Point of Sale",
+    "longDescription": "CODE X MART is an offline retail point of sale for marts and general stores: billing, inventory, purchasing, expenses, reports and backups.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "webviewInstallMode": { "type": "embedBootstrapper" },
+      "nsis": {
+        "installMode": "currentUser",
+        "installerIcon": "icons/icon.ico",
+        "displayLanguageSelector": false
+      }
+    }
+  }
+}
