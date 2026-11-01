@@ -77,7 +77,7 @@ It handles the full daily cycle of a shop: billing and receipts, returns, custom
 | Windows 10 64-bit (version 1809 or later) | Supported. Developed and tested on Windows 10 Pro 22H2 (build 19045). |
 | Windows 11 64-bit | Expected to work (same WebView2 runtime). **Not yet tested on a Windows 11 machine.** |
 
-CODE X MART needs the **Microsoft Edge WebView2 Runtime**. It is preinstalled on Windows 11 and on updated Windows 10 computers. If it is missing, the installer tries to download it (this needs internet once). See [docs/INSTALLATION.md](docs/INSTALLATION.md) for computers that are always offline.
+CODE X MART needs the **Microsoft Edge WebView2 Runtime**. It is preinstalled on Windows 11 and on updated Windows 10 computers. If it is missing, the installer installs it from Microsoft's offline installer, which is built into the setup file, so no internet is needed. See [docs/INSTALLATION.md](docs/INSTALLATION.md#webview2-and-computers-without-internet).
 
 ## Technology stack
 
@@ -159,7 +159,7 @@ CODE X MART/
 
 ## Installing CODE X MART (shop computer)
 
-1. Run `CODE X MART_1.0.0_x64-setup.exe`.
+1. Run `CODE X MART_1.0.0_x64-setup.exe`. This single file is the complete installer. It does not need the project folder, developer tools or internet.
 2. Windows SmartScreen may warn that the publisher is unknown, because the installer is **not code-signed**. Choose **More info → Run anyway**.
 3. Start CODE X MART from the Start menu or desktop shortcut.
 4. On first start, enter the store details, create the administrator account, and **write down the recovery key** that is shown.
@@ -214,7 +214,11 @@ This builds the optimized application and the Windows installer:
 - Application: `target\release\CODE X MART.exe`
 - Installer: `target\release\bundle\nsis\CODE X MART_1.0.0_x64-setup.exe`
 
-The first build downloads the NSIS installer toolkit from GitHub.
+The application is a single executable (about 15 MB). The UI, fonts and icons are embedded in it, SQLite is compiled in, and the C runtime is linked statically, so it needs no other files. The installer is about 212 MB because it also contains Microsoft's offline WebView2 installer (`webviewInstallMode: offlineInstaller` in `src-tauri/tauri.conf.json`). That installer runs only on computers that do not already have WebView2.
+
+To build a small installer (about 6 MB) for computers that are known to have WebView2 or internet, set `webviewInstallMode` to `{ "type": "embedBootstrapper" }`. On a computer without WebView2, that version must download it during installation.
+
+The first build downloads the NSIS installer toolkit and the WebView2 offline installer. Both are cached for later builds.
 
 ## Database
 

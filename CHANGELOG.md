@@ -19,7 +19,7 @@ First release: the complete offline Windows POS (Phase 1).
 - **Reports:** dashboard, sales summary, profit and loss, product and category sales, payment methods, returns, purchases, expenses, customer and supplier balances, inventory valuation, low stock, expiry, with CSV export and A4 printing.
 - **Security:** Administrator, Manager and Cashier roles enforced in the backend; Argon2id passwords; account lockout; recovery key; permanent audit log; database triggers protecting posted records.
 - **Backup:** automatic (scheduled and on exit) and manual backups, a second copy to a USB drive or other disk, verification after writing, validated restore with an automatic safety backup, backup history, a recovery screen for damaged databases, an automatic backup before upgrades.
-- Windows installer (NSIS, per-user).
+- Windows installer (NSIS, per-user). It is fully offline: it contains Microsoft's offline WebView2 Runtime installer and runs it only when WebView2 is missing.
 - Automated end-to-end tests that drive the real desktop app (`npm run test:e2e`).
 
 ### Known limitations

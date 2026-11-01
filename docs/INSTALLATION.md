@@ -6,13 +6,13 @@
 |---|---|
 | Windows | Windows 10 64-bit (version 1809 or newer) or Windows 11 64-bit |
 | Processor / memory | Any computer that runs Windows 10 comfortably (4 GB RAM recommended) |
-| Disk | About 30 MB for the program, plus space for data and backups |
-| WebView2 Runtime | Already included in Windows 11 and in updated Windows 10 |
-| Internet | **Not needed** for normal use. Only needed once if WebView2 is missing. |
+| Disk | About 30 MB for the program, plus space for data and backups (about 600 MB more if WebView2 has to be installed) |
+| WebView2 Runtime | Already included in Windows 11 and in updated Windows 10. If it is missing, the installer adds it (see below). |
+| Internet | **Not needed**, either to install or to use CODE X MART. |
 
 ## Install
 
-1. Copy `CODE X MART_1.0.0_x64-setup.exe` to the shop computer (for example from a USB drive).
+1. Copy `CODE X MART_1.0.0_x64-setup.exe` (about 212 MB) to the shop computer, for example from a USB drive. This one file is all that is needed. Do not copy the project folder.
 2. Double-click it.
 3. If Windows shows **"Windows protected your PC"**, click **More info → Run anyway**. This appears because the installer is not code-signed. It does not mean the file is harmful.
 4. Follow the installer. CODE X MART is installed for the current Windows user and does not need administrator rights.
@@ -32,14 +32,16 @@
 
 CODE X MART keeps its data in the Windows user's AppData folder. Use the **same Windows user account** for everyone who works on the till. Each person signs in to CODE X MART with their own username.
 
-## Computers without internet: WebView2
+## WebView2 and computers without internet
 
-The installer includes a small WebView2 bootstrapper that needs internet **only if** WebView2 is not already installed. To check, look for *Microsoft Edge WebView2 Runtime* under *Settings → Apps*.
+CODE X MART displays its screens with the **Microsoft Edge WebView2 Runtime**, the same component Windows uses for many built-in apps. The setup file contains Microsoft's official offline WebView2 installer (Evergreen Standalone Installer, x64, signed by Microsoft):
 
-On a computer that never goes online and lacks WebView2:
+- If WebView2 is already installed (normal on Windows 11 and updated Windows 10), setup skips this step.
+- If it is missing, setup installs it silently before installing CODE X MART. No internet is needed. This step can take a few minutes, and Windows may ask for permission.
 
-1. On another computer, download the **Evergreen Standalone Installer (x64)** from Microsoft's WebView2 download page.
-2. Copy it to the shop computer, run it, then run the CODE X MART installer.
+To check whether a computer already has it, look for *Microsoft Edge WebView2 Runtime* under *Settings → Apps*.
+
+If WebView2 cannot be installed (for example, a locked-down computer), setup stops with an error and installs nothing. Ask the computer's administrator to install the WebView2 Runtime, then run setup again.
 
 ## Where things are installed
 
