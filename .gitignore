@@ -1,6 +1,8 @@
 # --- Build output ---
 /target/
 /dist/
+tools/license-generator/dist/
+tools/license-generator/src-tauri/gen/schemas/
 /dist-ssr/
 src-tauri/target/
 src-tauri/gen/schemas/
@@ -33,6 +35,10 @@ node_modules/
 *.p12
 *.key
 signing/
+# License signing keys and their backups stay on the owner's computer.
+*.cxkey
+signing-key.dat
+license-history.db
 
 # --- Logs and caches ---
 *.log

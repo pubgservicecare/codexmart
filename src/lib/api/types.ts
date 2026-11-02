@@ -57,6 +57,63 @@ export interface AppStatus {
   backupDir: string;
   logDir: string;
   deviceId: string | null;
+  license: LicenseStatus;
+}
+
+// ------------------------------------------------------------- licensing
+
+export type AccessState = 'notStarted' | 'trial' | 'trialExpired' | 'licensed' | 'licenseExpired';
+
+export interface LicenseInfo {
+  serial: string;
+  edition: string;
+  editionLabel: string;
+  issuedOn: string;
+  expiresOn: string | null;
+  customerNo: number;
+}
+
+export interface OwnerContact {
+  name: string;
+  phone: string;
+  whatsappUrl: string;
+}
+
+export interface LicenseStatus {
+  state: AccessState;
+  /** Business operations are allowed. */
+  allowed: boolean;
+  today: string;
+  trialDays: number;
+  trialStartedOn: string | null;
+  trialDay: number | null;
+  trialDaysLeft: number | null;
+  trialLastDay: string | null;
+  trialEndedByClock: boolean;
+  license: LicenseInfo | null;
+  licenseDaysLeft: number | null;
+  /** Show the once-a-day "expires soon" reminder. */
+  reminder: boolean;
+  clockWarning: string | null;
+  deviceId: string;
+  owner: OwnerContact;
+  headline: string;
+  message: string;
+}
+
+export interface RequestCodeInfo {
+  requestCode: string;
+  deviceId: string;
+  appVersion: string;
+  product: string;
+}
+
+export interface KeyInspection {
+  groups: { text: string; ok: boolean | null }[];
+  expectedGroups: number;
+  complete: boolean;
+  problem: 'empty' | 'incomplete' | 'typo' | 'character' | 'wrongKind' | 'prefix' | 'tooLong' | null;
+  message: string | null;
 }
 
 export interface User {

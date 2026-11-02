@@ -1,6 +1,6 @@
 # CODE X MART — Roadmap
 
-## Phase 1 — Offline Windows POS (current, v1.0.0)
+## Phase 1 — Offline Windows POS (current, v1.1.0)
 
 Delivered: a complete offline desktop application covering billing, receipts, returns, customers and credit, products and variants, inventory with batches and expiry, purchasing, expenses, cash closing, reports, users and roles, audit log, and backup and restore. See [README](../README.md#main-features).
 

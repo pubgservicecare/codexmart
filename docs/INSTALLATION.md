@@ -12,7 +12,7 @@
 
 ## Install
 
-1. Copy `CODE X MART_1.0.0_x64-setup.exe` (about 212 MB) to the shop computer, for example from a USB drive. This one file is all that is needed. Do not copy the project folder.
+1. Copy `CODE X MART_1.1.0_x64-setup.exe` (about 212 MB) to the shop computer, for example from a USB drive. This one file is all that is needed. Do not copy the project folder.
 2. Double-click it.
 3. If Windows shows **"Windows protected your PC"**, click **More info → Run anyway**. This appears because the installer is not code-signed. It does not mean the file is harmful.
 4. Follow the installer. CODE X MART is installed for the current Windows user and does not need administrator rights.
@@ -51,6 +51,7 @@ If WebView2 cannot be installed (for example, a locked-down computer), setup sto
 | Shop data | `%APPDATA%\CODE X MART\data\codexmart.db` |
 | Automatic backups | `%APPDATA%\CODE X MART\backups\` |
 | Log files | `%LOCALAPPDATA%\com.codexmart.pos\logs\` |
+| License record of this computer | `HKCU\Software\CODE X MART Licensing` and `CODE X MART Licensing` folders (see [TRIAL_SYSTEM.md](TRIAL_SYSTEM.md)) |
 
 Program files and shop data are kept separate on purpose.
 
@@ -63,11 +64,18 @@ Program files and shop data are kept separate on purpose.
 
 Your data, settings and users are kept.
 
+## Free trial and activation
+
+CODE X MART is free for 30 days from the first setup. From day 25 a reminder appears once a day; from day 31 the business screens need an activation key from the software owner (Hamad Mansha, +92 348 6825408). Activation works without internet: see [OFFLINE_ACTIVATION.md](OFFLINE_ACTIVATION.md).
+
 ## Uninstalling
 
-Use *Windows Settings → Apps → CODE X MART → Uninstall*. **Uninstalling removes only the program.**
+Use *Windows Settings → Apps → CODE X MART → Uninstall*. The uninstaller asks what to do with your data:
 
-The uninstaller shows a **"Delete the application data"** checkbox, which is off by default. Ticking it removes only log files and the app's browser cache (`%LOCALAPPDATA%\com.codexmart.pos` and `%APPDATA%\com.codexmart.pos`). The shop data and backups in `%APPDATA%\CODE X MART` are **never** deleted by the uninstaller. To remove them as well, delete that folder by hand, after making sure you have a backup you no longer need.
+- **Keep my data and credentials** (default): only the program is removed. Reinstall later and sign in as before.
+- **Delete all my data and credentials**: after two confirmations, it also removes the shop database, accounts, settings, local backups, logs and cache. Backups on USB drives or other folders are not touched.
+
+In both cases the computer's license record is kept, so reinstalling does not start a new free trial. Full details: [UNINSTALLATION.md](UNINSTALLATION.md).
 
 ## Moving to a new computer
 

@@ -1,0 +1,37 @@
+[package]
+name = "codexmart-license-generator"
+description = "CODE X MART License Generator - owner-only tool that issues signed activation keys"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[[bin]]
+name = "codexmart-license-generator"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+codexmart-license = { path = "../../../crates/codexmart-license", features = ["issuer"] }
+tauri = { version = "2", features = [] }
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+chrono = "0.4"
+rusqlite = { version = "0.32", features = ["bundled"] }
+argon2 = "0.5"
+chacha20poly1305 = "0.10"
+ed25519-dalek = { version = "2", features = ["zeroize"] }
+getrandom = "0.2"
+zeroize = "1"
+hex = "0.4"
+log = "0.4"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = ["Win32_Foundation", "Win32_Security_Cryptography"] }
+
+[dev-dependencies]
+tempfile = "3"

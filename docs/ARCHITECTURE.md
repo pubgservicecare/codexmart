@@ -48,6 +48,7 @@ Each layer only calls the layers below it.
 - `backup_jobs.rs` runs a background thread that checks every 10 minutes whether an automatic backup is due. It also runs the backup when the window closes, copies automatic backups to the secondary folder, and orchestrates restore.
 - `printing.rs` uses the Windows spooler API (`OpenPrinterW`, `WritePrinter`, datatype `RAW`) for direct ESC/POS printing.
 - `tauri-plugin-single-instance` guarantees that only one copy of the app writes to the database.
+- `licensing/` enforces the free trial and licenses. `AppState::run` (used by every business command) asks `Licensing::require_access` first; `run_always` is used by the few commands that must keep working when activation is required (settings, own password, backup status). The rules and formats live in the separate `codexmart-license` crate, shared with the owner's License Generator (`tools/license-generator`), which alone enables its signing feature. See [LICENSING.md](LICENSING.md).
 - The Content Security Policy only allows the app's own resources. The window has the `core:default` and dialog permissions only: there is no shell or general filesystem access from the UI. The two file-writing commands (`export_text_file` for `.csv`/`.txt`, and backups) take paths the user chose in a native dialog.
 
 ## 4. User interface
@@ -104,6 +105,7 @@ Each layer only calls the layers below it.
 - The recovery key is 20 random characters, shown once and stored only as an Argon2 hash in `app_meta`.
 - All SQL uses bound parameters.
 - Settings contain no secrets.
+- Licenses are Ed25519-signed and device-bound; the app contains only public keys ([LICENSE_SECURITY.md](LICENSE_SECURITY.md)).
 
 ## 8. Preparing for Phase 2 (cloud synchronization)
 

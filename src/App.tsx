@@ -26,6 +26,7 @@ import { CashPage } from '@/features/cash/CashPage';
 import { ReportsPage } from '@/features/reports/ReportsPage';
 import { BackupPage } from '@/features/backup/BackupPage';
 import { SettingsPage } from '@/features/settings/SettingsPage';
+import { LicenseScreen } from '@/features/license/LicenseScreen';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -93,7 +94,7 @@ function Guard({ ok, children }: { ok: boolean; children: ReactNode }) {
 }
 
 function Root() {
-  const { status, session, settings, settingsError, reloadSettings, loading, can } = useSession();
+  const { status, session, settings, settingsError, reloadSettings, loading, license, can } = useSession();
   if (loading) return <Spinner label="Starting CODE X MART…" />;
   if (!status) return <Spinner />;
   if (!status.dbReady) return <DatabaseProblem message={status.dbError ?? 'Unknown error'} />;
@@ -103,6 +104,8 @@ function Root() {
   if (!settings) {
     return settingsError ? <ErrorBox error={settingsError} onRetry={reloadSettings} /> : <Spinner label="Loading your store…" />;
   }
+  // Free trial or license ended: activation first (shop data stays intact).
+  if (license && !license.allowed) return <LicenseScreen />;
 
   return (
     <HashRouter>

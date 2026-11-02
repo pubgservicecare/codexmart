@@ -78,6 +78,14 @@ If the database file is damaged, CODE X MART shows **"The shop data could not be
 5. Sign in with your **usual** username and password from the backup.
 6. Set up the backup settings again if the USB drive letter has changed.
 
+## Backups and the license
+
+- A backup contains the shop database, including a copy of the trial/license state. It never contains the owner's private signing key (that exists only on the owner's computer).
+- Restoring an **old** backup does not restart the free trial: the app merges the backup's copy with the copies kept outside the database, and the earliest trial start wins.
+- Restoring a backup on the **same** computer keeps its license. On **another** computer the license does not apply (licenses belong to one computer); the owner transfers it. See [DEVICE_BINDING.md](DEVICE_BINDING.md).
+- When the free trial or license has ended, **Back up now** and **Back up to USB / folder…** are still available on the activation screen, and restore still works.
+- Uninstalling with **Delete all my data and credentials** deletes the local backups in `%APPDATA%\CODE X MART\backups`, but never backups on a USB drive or in another folder you chose. With **Keep my data**, every backup stays. See [UNINSTALLATION.md](UNINSTALLATION.md).
+
 ## Forgotten administrator password
 
 On the sign-in screen click **Forgot the administrator password?**, enter the recovery key from the first setup, the administrator username and a new password. A new recovery key can be generated in *Settings → Security & health* (the old one stops working).

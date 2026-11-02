@@ -18,6 +18,8 @@ use codexmart_core::{Actor, AppError, AppResult, Ctx};
 use serde::Serialize;
 use tauri::{AppHandle, Manager};
 
+use crate::licensing::{Licensing, Locations};
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AppPaths {
@@ -56,6 +58,7 @@ impl AppPaths {
 
 pub struct AppState {
     pub paths: AppPaths,
+    pub licensing: Licensing,
     db: Mutex<Option<Connection>>,
     db_error: Mutex<Option<String>>,
     session: Mutex<Option<Actor>>,
@@ -84,10 +87,64 @@ pub fn record_history(paths: &AppPaths, action: &str, kind: &str, result: &Resul
     }
 }
 
+/// Left in the data folder by the uninstaller when "Delete all my data and
+/// credentials" could not remove everything because a file was in use.
+pub const DELETE_MARKER: &str = "DELETE-PENDING.txt";
+
+fn clear_read_only(path: &Path) {
+    if let Ok(meta) = std::fs::symlink_metadata(path) {
+        let mut perms = meta.permissions();
+        if perms.readonly() {
+            #[allow(clippy::permissions_set_readonly_false)]
+            perms.set_readonly(false);
+            let _ = std::fs::set_permissions(path, perms);
+        }
+        if meta.is_dir() {
+            for entry in std::fs::read_dir(path).into_iter().flatten().flatten() {
+                clear_read_only(&entry.path());
+            }
+        }
+    }
+}
+
+/// Finishes a deletion the user chose when uninstalling, before anything in
+/// the folder is opened, so old accounts and shop data are never reused.
+pub fn finish_pending_delete(root: &Path) -> Result<(), String> {
+    clear_read_only(root);
+    let mut problems = Vec::new();
+    for entry in std::fs::read_dir(root).map_err(|e| e.to_string())?.flatten() {
+        let p = entry.path();
+        if p.file_name().is_some_and(|n| n == DELETE_MARKER) {
+            continue;
+        }
+        let removed = if p.is_dir() { std::fs::remove_dir_all(&p) } else { std::fs::remove_file(&p) };
+        if let Err(e) = removed {
+            problems.push(format!("{}: {e}", p.display()));
+        }
+    }
+    if !problems.is_empty() {
+        return Err(problems.join("; "));
+    }
+    std::fs::remove_file(root.join(DELETE_MARKER)).map_err(|e| e.to_string())?;
+    log::info!("Finished deleting the data removed at uninstall: {}", root.display());
+    Ok(())
+}
+
 /// Opens (and if needed upgrades) the database. Never creates a fresh
 /// database over an existing file that fails to open: errors are returned
 /// so the user can restore a backup instead.
 pub fn open_database(paths: &AppPaths) -> AppResult<Connection> {
+    if paths.root.join(DELETE_MARKER).exists() {
+        finish_pending_delete(&paths.root).map_err(|e| {
+            AppError::Database(format!(
+                "CODE X MART could not finish deleting the data you chose to delete when uninstalling, because a file is still in use ({e}). Close any program using the folder {}, then try again.",
+                paths.root.display()
+            ))
+        })?;
+        for dir in [paths.db_file.parent().unwrap(), &paths.backup_dir, &paths.work_dir] {
+            std::fs::create_dir_all(dir)?;
+        }
+    }
     let existed = std::fs::metadata(&paths.db_file).map(|m| m.len() > 0).unwrap_or(false);
     let mut conn = db::open(&paths.db_file)?;
     db::quick_check(&conn)?;
@@ -116,7 +173,7 @@ pub fn open_database(paths: &AppPaths) -> AppResult<Connection> {
 }
 
 impl AppState {
-    pub fn initialize(paths: AppPaths) -> Self {
+    pub fn initialize(paths: AppPaths, locations: Locations) -> Self {
         let (conn, error) = match open_database(&paths) {
             Ok(c) => (Some(c), None),
             Err(e) => {
@@ -124,8 +181,10 @@ impl AppState {
                 (None, Some(e.to_string()))
             }
         };
+        let licensing = Licensing::load(locations, conn.as_ref());
         AppState {
             paths,
+            licensing,
             db: Mutex::new(conn),
             db_error: Mutex::new(error),
             session: Mutex::new(None),
@@ -157,8 +216,19 @@ impl AppState {
         f(conn)
     }
 
-    /// Runs `f` as the signed-in user.
+    /// Runs a business operation as the signed-in user. Refused while the
+    /// free trial or license has ended (nothing is changed).
     pub fn run<T>(&self, f: impl FnOnce(&mut Connection, &Ctx) -> AppResult<T>) -> AppResult<T> {
+        let actor = self.session().ok_or(AppError::Unauthenticated)?;
+        self.licensing.require_access()?;
+        let ctx = Ctx::new(actor);
+        self.with_conn(|conn| f(conn, &ctx))
+    }
+
+    /// Like [`AppState::run`] but also allowed when activation is required:
+    /// for the few operations that keep an expired installation safe and
+    /// usable (settings, own password, backup status).
+    pub fn run_always<T>(&self, f: impl FnOnce(&mut Connection, &Ctx) -> AppResult<T>) -> AppResult<T> {
         let actor = self.session().ok_or(AppError::Unauthenticated)?;
         let ctx = Ctx::new(actor);
         self.with_conn(|conn| f(conn, &ctx))
@@ -172,6 +242,9 @@ impl AppState {
         let outcome = replace(&self.paths.db_file);
         match open_database(&self.paths) {
             Ok(conn) => {
+                // A restored backup carries its own license state: merge it
+                // (the earliest trial start and every license are kept).
+                self.licensing.on_database(&conn);
                 *guard = Some(conn);
                 *lock(&self.db_error) = None;
             }
@@ -194,6 +267,7 @@ impl AppState {
         }
         match open_database(&self.paths) {
             Ok(conn) => {
+                self.licensing.on_database(&conn);
                 *guard = Some(conn);
                 *lock(&self.db_error) = None;
                 Ok(())
@@ -209,7 +283,9 @@ impl AppState {
     /// is checkpointed into the main file, so the data file is complete on
     /// its own. (Data is safe even without this; SQLite replays the log.)
     pub fn shutdown(&self) {
-        if let Some(conn) = lock(&self.db).take() {
+        let conn = lock(&self.db).take();
+        self.licensing.refresh(conn.as_ref());
+        if let Some(conn) = conn {
             if let Err(e) = conn.query_row("PRAGMA wal_checkpoint(TRUNCATE)", [], |_| Ok(())) {
                 log::warn!("Could not checkpoint the database on exit: {e}");
             }
@@ -217,5 +293,29 @@ impl AppState {
                 log::warn!("Could not close the database cleanly: {e}");
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pending_delete_removes_everything_including_read_only_files() {
+        let root = std::env::temp_dir().join(format!("cxm-pending-delete-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("data")).unwrap();
+        std::fs::create_dir_all(root.join("backups")).unwrap();
+        std::fs::write(root.join("data").join("codexmart.db"), b"old shop").unwrap();
+        let backup = root.join("backups").join("old.cxmbak");
+        std::fs::write(&backup, b"old backup").unwrap();
+        let mut perms = std::fs::metadata(&backup).unwrap().permissions();
+        perms.set_readonly(true);
+        std::fs::set_permissions(&backup, perms).unwrap();
+        std::fs::write(root.join(DELETE_MARKER), b"delete").unwrap();
+
+        finish_pending_delete(&root).unwrap();
+        assert_eq!(std::fs::read_dir(&root).unwrap().count(), 0);
+        let _ = std::fs::remove_dir_all(&root);
     }
 }

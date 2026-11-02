@@ -45,7 +45,7 @@ Rules:
 
 | Table | Purpose |
 |---|---|
-| `app_meta` | `app` marker (`CODE X MART`), `db_id`, `device_id`, `created_at`, `recovery_key_hash` |
+| `app_meta` | `app` marker (`CODE X MART`), `db_id`, `device_id`, `created_at`, `recovery_key_hash`, `license_state` (one authenticated copy of the trial/license record; see [TRIAL_SYSTEM.md](TRIAL_SYSTEM.md)) |
 | `schema_migrations` | Applied migrations with checksums |
 | `settings` | Key/value settings (JSON values), merged over defaults |
 | `sequences` | Document number prefixes and counters |

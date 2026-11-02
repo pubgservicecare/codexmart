@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { api, onApiError, type AppStatus, type Permission, type Session, type Settings } from './api';
+import { api, onApiError, type AppStatus, type LicenseStatus, type Permission, type Session, type Settings } from './api';
 import { setMoneyFormat } from './format';
 
 interface SessionValue {
@@ -11,6 +11,10 @@ interface SessionValue {
   settingsError: unknown;
   reloadSettings: () => void;
   loading: boolean;
+  /** Free trial / license status; business screens need `license.allowed`. */
+  license: LicenseStatus | null;
+  setLicense: (l: LicenseStatus) => void;
+  refreshLicense: () => Promise<void>;
   can: (p: Permission) => boolean;
   setSession: (s: Session | null) => void;
   refreshStatus: () => Promise<void>;
@@ -24,11 +28,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AppStatus | null>(null);
   const [session, setSessionState] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [license, setLicense] = useState<LicenseStatus | null>(null);
+
+  const refreshLicense = useCallback(async () => {
+    try {
+      setLicense(await api.license.status());
+    } catch {
+      // Keep the last known status; the backend enforces access anyway.
+    }
+  }, []);
 
   const refreshStatus = useCallback(async () => {
     try {
       const s = await api.app.status();
       setStatus(s);
+      setLicense(s.license);
       setSessionState(s.session);
       // Signed out by the backend (e.g. after a restore): drop cached data.
       if (!s.session) qc.clear();
@@ -63,9 +77,18 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       if (s) window.location.hash = '#/';
       setSessionState(s);
       if (!s) qc.clear();
+      void refreshLicense();
     },
-    [qc],
+    [qc, refreshLicense],
   );
+
+  // The trial can end (or a license expire) while the app is open: check
+  // again every few minutes, and whenever the backend refuses an operation.
+  useEffect(() => {
+    if (!session) return;
+    const id = setInterval(() => void refreshLicense(), 5 * 60_000);
+    return () => clearInterval(id);
+  }, [session, refreshLicense]);
 
   // The backend ends the session (e.g. after a restore): go back to sign-in.
   useEffect(
@@ -75,8 +98,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           setSessionState(null);
           qc.clear();
         }
+        if (e.code === 'LICENSE_REQUIRED') void refreshLicense();
       }),
-    [qc],
+    [qc, refreshLicense],
   );
 
   const signOut = useCallback(async () => {
@@ -92,12 +116,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       settingsError,
       reloadSettings,
       loading,
+      license,
+      setLicense,
+      refreshLicense,
       can: (p) => !!session?.permissions.includes(p),
       setSession,
       refreshStatus,
       signOut,
     }),
-    [status, session, settings, settingsError, reloadSettings, loading, setSession, refreshStatus, signOut],
+    [status, session, settings, settingsError, reloadSettings, loading, license, refreshLicense, setSession, refreshStatus, signOut],
   );
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }

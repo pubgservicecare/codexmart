@@ -25,6 +25,10 @@ pub enum AppError {
     Backup(String),
     #[error("{0}")]
     Internal(String),
+    /// The free trial or license has ended: business operations wait for
+    /// activation (sign-in, backups and activation still work).
+    #[error("{0}")]
+    LicenseRequired(String),
 }
 
 pub type AppResult<T> = Result<T, AppError>;
@@ -50,6 +54,7 @@ impl AppError {
             AppError::Io(_) => "IO",
             AppError::Backup(_) => "BACKUP",
             AppError::Internal(_) => "INTERNAL",
+            AppError::LicenseRequired(_) => "LICENSE_REQUIRED",
         }
     }
 }

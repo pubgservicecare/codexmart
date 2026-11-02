@@ -159,6 +159,13 @@ export const api = {
     lowStock: () => call<T.Product[]>('reports_low_stock'),
     expiring: (days: number) => call<T.Batch[]>('reports_expiring', { days }),
   },
+  license: {
+    status: () => call<T.LicenseStatus>('license_status'),
+    requestCode: () => call<T.RequestCodeInfo>('license_request_code'),
+    inspectKey: (key: string) => call<T.KeyInspection>('license_inspect_key', { key }),
+    activate: (key: string) => call<T.LicenseStatus>('license_activate', { key }),
+    openWhatsApp: () => call<void>('license_open_whatsapp'),
+  },
   backup: {
     status: () => call<T.BackupStatus>('backup_status'),
     create: (destDir?: string) => call<T.BackupRun>('backup_create', { destDir }),

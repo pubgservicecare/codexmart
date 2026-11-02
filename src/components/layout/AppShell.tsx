@@ -25,6 +25,7 @@ import { t } from '@/lib/i18n';
 import type { Permission } from '@/lib/api';
 import { cx } from '@/lib/utils';
 import { ChangePasswordDialog } from '@/features/auth/ChangePasswordDialog';
+import { LicenseReminder } from '@/features/license/LicenseReminder';
 
 interface NavItem {
   to: string;
@@ -164,6 +165,7 @@ export function AppShell() {
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="flex h-12 shrink-0 items-center justify-end gap-4 border-b border-slate-200/80 bg-white/70 px-6 text-xs text-slate-500 backdrop-blur">
+          <LicenseReminder />
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700 ring-1 ring-inset ring-emerald-200">
             <WifiOff className="h-3.5 w-3.5" />
             {t('status.offline')}

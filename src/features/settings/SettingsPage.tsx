@@ -25,8 +25,9 @@ import {
 } from '@/components/ui';
 import { Receipt } from '@/components/Receipt';
 import { ChangePasswordDialog } from '@/features/auth/ChangePasswordDialog';
+import { LicensePanel } from '@/features/license/LicenseReminder';
 
-type Tab = 'store' | 'receipt' | 'features' | 'users' | 'lists' | 'security' | 'audit' | 'about';
+type Tab = 'store' | 'receipt' | 'features' | 'users' | 'lists' | 'security' | 'audit' | 'license' | 'about';
 
 export function SettingsPage() {
   const { can } = useSession();
@@ -40,6 +41,7 @@ export function SettingsPage() {
         (can('manageCatalog') || can('manageExpenses')) && { key: 'lists' as Tab, label: 'Categories & units' },
         (can('manageUsers') || can('manageInventory')) && { key: 'security' as Tab, label: 'Security & health' },
         can('viewAudit') && { key: 'audit' as Tab, label: 'Audit log' },
+        { key: 'license' as Tab, label: 'License' },
         { key: 'about' as Tab, label: 'About' },
       ].filter(Boolean) as { key: Tab; label: string }[],
     [can],
@@ -57,6 +59,7 @@ export function SettingsPage() {
       {tab === 'lists' && <ListsSettings />}
       {tab === 'security' && <SecuritySettings />}
       {tab === 'audit' && <AuditLog />}
+      {tab === 'license' && <LicensePanel />}
       {tab === 'about' && <About />}
     </div>
   );
@@ -815,7 +818,7 @@ function AuditLog() {
 }
 
 function About() {
-  const { status } = useSession();
+  const { status, license } = useSession();
   const [pwOpen, setPwOpen] = useState(false);
   const row = (label: string, value: ReactNode) => (
     <div className="grid grid-cols-3 gap-4 border-b border-slate-100 py-2.5 text-sm last:border-0">
@@ -836,7 +839,8 @@ function About() {
         <div className="mt-5">
           {row('Version', status?.appVersion)}
           {row('Database version', status?.schemaVersion)}
-          {row('Device ID', <span className="font-mono text-xs">{status?.deviceId}</span>)}
+          {row('Device ID', <span className="font-mono text-xs">{license?.deviceId}</span>)}
+          {row('License', license?.license ? `${license.license.editionLabel} · ${license.license.serial}` : license?.headline)}
           {row('Mode', 'Offline — all data is stored on this computer')}
         </div>
         <Button className="mt-4" icon={<KeyRound className="h-4 w-4" />} onClick={() => setPwOpen(true)}>

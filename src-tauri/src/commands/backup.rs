@@ -28,7 +28,9 @@ pub struct BackupStatus {
 
 #[tauri::command]
 pub async fn backup_status(state: State<'_, AppState>) -> CmdResult<BackupStatus> {
-    let s = state.run(|c, ctx| {
+    // Backups stay available when activation is required: shop data must
+    // always be safe to copy.
+    let s = state.run_always(|c, ctx| {
         ctx.require(Permission::CreateBackup)?;
         settings::load(c)
     })?;

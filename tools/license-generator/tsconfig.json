@@ -1,0 +1,9 @@
+{
+  "extends": "../../tsconfig.app.json",
+  "compilerOptions": {
+    "tsBuildInfoFile": "../../node_modules/.tmp/tsconfig.licensegen.tsbuildinfo",
+    "baseUrl": ".",
+    "paths": { "@/*": ["../../src/*"], "@gen/*": ["./src/*"] }
+  },
+  "include": ["src", "../../src/vite-env.d.ts"]
+}

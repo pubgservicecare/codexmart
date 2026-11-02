@@ -14,6 +14,7 @@ use serde::Serialize;
 use tauri::State;
 
 use super::CmdResult;
+use crate::licensing::LicenseStatus;
 use crate::state::AppState;
 
 #[derive(Serialize)]
@@ -44,6 +45,7 @@ pub struct AppStatus {
     pub backup_dir: String,
     pub log_dir: String,
     pub device_id: Option<String>,
+    pub license: LicenseStatus,
 }
 
 #[tauri::command]
@@ -69,6 +71,7 @@ pub async fn app_status(state: State<'_, AppState>) -> CmdResult<AppStatus> {
         backup_dir: state.paths.backup_dir.to_string_lossy().to_string(),
         log_dir: state.paths.log_dir.to_string_lossy().to_string(),
         device_id,
+        license: state.licensing.status(),
     })
 }
 
@@ -87,7 +90,12 @@ pub struct SetupResponse {
 
 #[tauri::command]
 pub async fn app_setup(state: State<'_, AppState>, input: SetupInput) -> CmdResult<SetupResponse> {
-    let result = state.with_conn(|c| auth::setup(c, input, Utc::now()))?;
+    let result = state.with_conn(|c| {
+        let r = auth::setup(c, input, Utc::now())?;
+        // The free trial starts now, when the shop is set up.
+        state.licensing.on_database(c);
+        Ok(r)
+    })?;
     state.set_session(Some(result.actor.clone()));
     Ok(SetupResponse { session: result.actor.into(), recovery_key: result.recovery_key })
 }
@@ -121,7 +129,7 @@ pub async fn auth_logout(state: State<'_, AppState>) -> CmdResult<()> {
 
 #[tauri::command]
 pub async fn auth_change_password(state: State<'_, AppState>, current: String, new_password: String) -> CmdResult<()> {
-    state.run(|c, ctx| auth::change_own_password(c, ctx, &current, &new_password))
+    state.run_always(|c, ctx| auth::change_own_password(c, ctx, &current, &new_password))
 }
 
 #[tauri::command]
@@ -136,7 +144,7 @@ pub async fn auth_recover(
 
 #[tauri::command]
 pub async fn auth_regenerate_recovery_key(state: State<'_, AppState>) -> CmdResult<String> {
-    state.run(auth::regenerate_recovery_key)
+    state.run_always(auth::regenerate_recovery_key)
 }
 
 #[tauri::command]
@@ -161,7 +169,7 @@ pub async fn users_reset_password(state: State<'_, AppState>, id: String, new_pa
 
 #[tauri::command]
 pub async fn settings_get(state: State<'_, AppState>) -> CmdResult<Settings> {
-    state.run(|c, ctx| settings::get(c, ctx))
+    state.run_always(|c, ctx| settings::get(c, ctx))
 }
 
 #[tauri::command]

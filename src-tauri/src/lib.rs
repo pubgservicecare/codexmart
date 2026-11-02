@@ -2,6 +2,7 @@
 
 mod backup_jobs;
 mod commands;
+mod licensing;
 mod printing;
 mod state;
 
@@ -33,8 +34,10 @@ pub fn run() {
             let paths = AppPaths::resolve(app.handle())?;
             log::info!("CODE X MART {} starting; data folder: {}", codexmart_core::APP_VERSION, paths.root.display());
             std::panic::set_hook(Box::new(|info| log::error!("Unexpected error: {info}")));
-            app.manage(AppState::initialize(paths));
+            let locations = licensing::Locations::resolve(app.path().data_dir().ok(), app.path().local_data_dir().ok());
+            app.manage(AppState::initialize(paths, locations));
             backup_jobs::start_scheduler(app.handle().clone());
+            licensing::start_refresh(app.handle().clone());
             Ok(())
         })
         .on_window_event(|window, event| {
@@ -144,6 +147,11 @@ pub fn run() {
             commands::backup::backup_list_folder,
             commands::backup::backup_validate,
             commands::backup::backup_restore,
+            commands::license::license_status,
+            commands::license::license_request_code,
+            commands::license::license_inspect_key,
+            commands::license::license_activate,
+            commands::license::license_open_whatsapp,
         ])
         .build(tauri::generate_context!())
         .expect("CODE X MART could not start");

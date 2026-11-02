@@ -1,0 +1,34 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "CODE X MART License Generator",
+  "mainBinaryName": "CODE X MART License Generator",
+  "version": "1.1.0",
+  "identifier": "com.codexmart.licensegenerator",
+  "build": {
+    "beforeDevCommand": { "script": "npm run licensegen:dev", "cwd": "../.." },
+    "devUrl": "http://localhost:1430",
+    "beforeBuildCommand": { "script": "npm run licensegen:ui", "cwd": "../.." },
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "CODE X MART License Generator (owner only)",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 1024,
+        "minHeight": 640,
+        "center": true,
+        "resizable": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' ipc: http://ipc.localhost; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; connect-src 'self' ipc: http://ipc.localhost"
+    }
+  },
+  "bundle": {
+    "active": false,
+    "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
+  }
+}

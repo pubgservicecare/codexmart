@@ -4,7 +4,7 @@
 
 It handles the full daily cycle of a shop: billing and receipts, returns, customers and credit (udhaar), products and stock, suppliers and purchasing, expenses, cash closing, profit reporting, and automatic backups. Everything runs on one computer, with no internet connection required.
 
-> **Status:** Version 1.0.0 — Phase 1 (offline desktop application). The cloud features described under [Roadmap](#future-cloud-architecture-roadmap) are **not** implemented yet.
+> **Status:** Version 1.1.0, Phase 1 (offline desktop application), with a 30-day free trial and offline license activation. The cloud features described under [Roadmap](#future-cloud-architecture-roadmap) are **not** implemented yet.
 
 ---
 
@@ -69,6 +69,16 @@ It handles the full daily cycle of a shop: billing and receipts, returns, custom
 - Permanent audit log of important actions.
 - Posted sales, payments, purchases, returns, stock movements and the audit log cannot be edited or deleted (enforced by database triggers).
 - Automatic and manual backups with verification, a second copy on a USB drive or other disk, and a guarded restore.
+
+**Free trial and licensing (offline)**
+- **30-day free trial** from shop setup. A once-a-day reminder runs from day 25; from day 31, staff can still sign in, but the business screens wait for activation. Shop data is never touched, and backups stay available.
+- **Offline activation:** the shop sends a short request code (`CXMR-…`) to the software owner, Hamad Mansha (+92 348 6825408, WhatsApp button included). The owner sends back a device-bound activation key (`CXMA-…`), which is checked on the computer with no internet.
+- Keys are signed with **Ed25519**. CODE X MART contains only the public key, and every group of a code has a Luhn mod 32 check symbol that catches typing mistakes.
+- License types: 1, 3 and 6 months, 1 year, lifetime, 30-day trial extension and custom dates. Each license has a serial number like `CXMT-7K92-4P6D-8W3H-5R2X`.
+- Trial protection: authenticated copies in several places, clock set-back detection, and no reset on reinstall, data deletion, new accounts or backup restore.
+- A separate owner-only **License Generator** (`tools/license-generator`): encrypted signing key with backup and recovery, issuing, license history, reissue, transfer to a new computer, and CSV export. It is never part of the customer installer.
+- The **uninstaller asks** whether to keep or delete all shop data and credentials (two confirmations to delete). In both cases the device license record is kept, so reinstalling does not start a new trial.
+- Details: [docs/LICENSING.md](docs/LICENSING.md).
 
 ## Supported Windows versions
 
@@ -140,13 +150,17 @@ CODE X MART/
 │   ├── src/backup.rs           Backup and restore engine
 │   ├── src/escpos.rs           Thermal printer receipt rendering
 │   └── tests/                  Integration tests
+├── crates/codexmart-license/   Licensing: codes, signatures, device id, trial records
 ├── src-tauri/                  Desktop shell (Tauri 2)
 │   ├── src/commands/           Tauri commands (one file per area)
 │   ├── src/state.rs            Data folder, database connection, session
+│   ├── src/licensing/          Trial/license enforcement, device fingerprint, state copies
 │   ├── src/backup_jobs.rs      Scheduled backups, USB copy, restore
 │   ├── src/printing.rs         Windows printer access (RAW / ESC-POS)
+│   ├── windows/                Installer template and uninstall data choice (NSIS)
 │   ├── icons/                  Application icons
 │   └── tauri.conf.json         App and installer configuration
+├── tools/license-generator/    Owner-only License Generator (separate Tauri app)
 ├── src/                        User interface (React + TypeScript)
 │   ├── lib/                    API client, formatting, session, print, scanner, CSV
 │   ├── components/             Design system, receipt, barcode, product search
@@ -159,10 +173,13 @@ CODE X MART/
 
 ## Installing CODE X MART (shop computer)
 
-1. Run `CODE X MART_1.0.0_x64-setup.exe`. This single file is the complete installer. It does not need the project folder, developer tools or internet.
+1. Run `CODE X MART_1.1.0_x64-setup.exe`. This single file is the complete installer. It does not need the project folder, developer tools or internet.
 2. Windows SmartScreen may warn that the publisher is unknown, because the installer is **not code-signed**. Choose **More info → Run anyway**.
 3. Start CODE X MART from the Start menu or desktop shortcut.
-4. On first start, enter the store details, create the administrator account, and **write down the recovery key** that is shown.
+4. On first start, enter the store details, create the administrator account, and **write down the recovery key** that is shown. The 30-day free trial starts now.
+5. To activate (any time, or when the trial ends): send the request code from *Settings → License* to the software owner and enter the activation key you receive. See [docs/OFFLINE_ACTIVATION.md](docs/OFFLINE_ACTIVATION.md).
+
+Uninstalling asks whether to keep or delete your shop data: see [docs/UNINSTALLATION.md](docs/UNINSTALLATION.md).
 
 Full guide: [docs/INSTALLATION.md](docs/INSTALLATION.md). Daily use: [docs/USER_GUIDE.md](docs/USER_GUIDE.md).
 
@@ -195,7 +212,9 @@ npm install
 | `cargo test --workspace` | Rust unit and integration tests. |
 | `cargo clippy --workspace --all-targets` | Rust lints. |
 | `npm run check` | All of the above. |
-| `npm run test:e2e` | End-to-end tests on the real desktop app, using a throwaway data folder. |
+| `npm run test:e2e` | End-to-end tests on the real desktop app and License Generator, using throwaway folders. |
+| `npm run licensegen:dev` | Runs the License Generator UI in Vite (port 1430); for the desktop window run `npx tauri dev` in `tools/license-generator`. |
+| `npm run licensegen:build` | Builds `target\release\CODE X MART License Generator.exe` (owner only, not part of the installer). |
 
 During development you can keep test data away from your real data:
 
@@ -212,7 +231,17 @@ npm run app:build
 This builds the optimized application and the Windows installer:
 
 - Application: `target\release\CODE X MART.exe`
-- Installer: `target\release\bundle\nsis\CODE X MART_1.0.0_x64-setup.exe`
+- Installer: `target\release\bundle\nsis\CODE X MART_1.1.0_x64-setup.exe`
+
+The installer contains only these items:
+
+- `CODE X MART.exe`, with the public license key built in;
+- the uninstaller;
+- the WebView2 offline installer.
+
+The License Generator, the private signing key and the owner's license history are never part of it. The uninstaller uses the template in `src-tauri/windows/`: the Tauri template plus the keep/delete data page.
+
+The owner's License Generator is built separately with `npm run licensegen:build`. The output is `target\release\CODE X MART License Generator.exe`, a single file of about 11 MB.
 
 The application is a single executable (about 15 MB). The UI, fonts and icons are embedded in it, SQLite is compiled in, and the C runtime is linked statically, so it needs no other files. The installer is about 212 MB because it also contains Microsoft's offline WebView2 installer (`webviewInstallMode: offlineInstaller` in `src-tauri/tauri.conf.json`). That installer runs only on computers that do not already have WebView2.
 
@@ -274,13 +303,27 @@ The Rust integration tests (`crates/codexmart-core/tests/`) run every business w
 ### End-to-end tests
 
 ```powershell
-npm run test:e2e            # builds a test copy of the app, then runs both suites
+npm run test:e2e            # builds test copies of the app and the License Generator, then runs suites 1-3
 ```
 
-`e2e/` drives the **real desktop application** through WebView2's debugging port (Playwright), with `CODEXMART_DATA_DIR` pointing to a temporary folder, so real shop data is never touched. Close any running CODE X MART first. Screenshots are saved for review.
+`e2e/` drives the **real desktop application** through WebView2's debugging port (Playwright).
+
+- `CODEXMART_DATA_DIR`, `CODEXMART_LICENSE_DIR` and `CXM_LICENSEGEN_DIR` point to temporary folders, so real shop data, license state and signing keys are never touched.
+- The test copy is built with the `e2e` cargo feature: a shifted clock, a simulated computer and an extra trusted test key. The installer never includes it.
+- Close any running CODE X MART first. Screenshots are saved for review.
 
 - **`01-first-day.mjs`** — first-run setup and recovery key, products (generated EAN-13, batch tracking), duplicate-barcode rejection, cash sale with bill discount and change, receipt printing, split payment, credit sale, oversell refusal, sales history, partial return, profit and loss figures, stock ledger verification, customer balance, the scheduled automatic backup, and a check that no network requests leave the computer.
 - **`02-restart-backup-restore.mjs`** — restart and persistence, wrong password, receiving goods with partial payment, supplier balance, expenses, cash closing slip, cashier account and role restrictions, backup and full restore (with safety backup), administrator reset with the recovery key, clean shutdown, and the damaged-database recovery screen (file left untouched, retry without restart).
+- **`03-licensing.mjs`** covers the License Generator and the trial on the real app:
+  - **Generator key setup:** short passphrase refused, key backup, lock and unlock.
+  - **Trial days:** days 1 and 24 (no reminder), 25-30 (reminder once a day) and 31 (activation screen, backend refusal, backup still allowed).
+  - **Activation:** request code, issuing in the generator, a typing mistake located by group, a forged key with valid checksums refused, an expired key refused, then activation with shop data intact.
+  - **Afterwards:** restart, restore, clock set-back warning, motherboard replacement and transfer, lifetime license years later, history, CSV export, and key restore on another computer.
+- **`04-installer.mjs`** tests the **production installer** and its uninstaller through UI Automation. Run it by hand: `node e2e/04-installer.mjs <setup.exe> <e2e app> <generator> <work> <safekeeping>`. It moves the computer's real CODE X MART data and registry entries aside first and restores them at the end.
+  - **Production build:** test hooks ignored, license records in the right locations, a foreign signing key refused.
+  - **Uninstall choices:** cancel and both "No" answers change nothing. "Keep my data" then reinstall gives the same login and data. "Delete all my data" with the app open, then reinstall, gives a new setup, refuses the old login and keeps the original trial.
+  - **Activation with the real owner key.**
+  - **Edge cases:** silent `/S` and `/S /DELETEDATA`, a locked database, a damaged database, a read-only backup, and day 31 after deletion.
 
 ## Release procedure
 
@@ -303,6 +346,8 @@ npm run test:e2e            # builds a test copy of the app, then runs both suit
 | Scanner types into the wrong place | Most scanners need *keyboard (HID) mode* and an *Enter* suffix. Both are usually the default. |
 | Receipt is cut off or too small | Pick the correct paper size and, in the Windows print dialog, set margins to *None* and scale to 100%. |
 | Where are the log files? | *Settings → About → Open logs*. |
+| "Your free trial has expired" | Send the request code to Hamad Mansha (+92 348 6825408) and enter the activation key: [docs/OFFLINE_ACTIVATION.md](docs/OFFLINE_ACTIVATION.md). Shop data is safe and backups still work. |
+| An activation key is refused | See [docs/LICENSE_TROUBLESHOOTING.md](docs/LICENSE_TROUBLESHOOTING.md). |
 
 ## Future cloud architecture roadmap
 
@@ -333,6 +378,10 @@ The decision on the synchronization outbox is documented in [docs/ARCHITECTURE.m
 - If overselling is enabled, stock cost differences on goods sold before they were received are absorbed rather than reported.
 - Not tested on Windows 11 or with physical thermal printers or barcode scanners (see above).
 - The installer is not code-signed.
+- Offline licensing has limits:
+  - Someone who studies the public source code and edits every copy of the trial records can cheat the trial.
+  - Licenses cannot be revoked remotely.
+  - Licenses themselves cannot be forged without the owner's private key. See [docs/LICENSE_SECURITY.md](docs/LICENSE_SECURITY.md).
 
 ## Documentation
 
@@ -343,6 +392,15 @@ The decision on the synchronization outbox is documented in [docs/ARCHITECTURE.m
 | [docs/BACKUP_AND_RESTORE.md](docs/BACKUP_AND_RESTORE.md) | Backups and disaster recovery |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Developers: design and principles |
 | [docs/DATABASE.md](docs/DATABASE.md) | Developers: schema, migrations, integrity |
+| [docs/LICENSING.md](docs/LICENSING.md) | Overview of the trial and licensing system |
+| [docs/OFFLINE_ACTIVATION.md](docs/OFFLINE_ACTIVATION.md) | Shop owner: activating without internet |
+| [docs/TRIAL_SYSTEM.md](docs/TRIAL_SYSTEM.md) | How the trial works and is protected |
+| [docs/LICENSE_GENERATOR.md](docs/LICENSE_GENERATOR.md) | Software owner: issuing licenses |
+| [docs/OWNER_KEY_MANAGEMENT.md](docs/OWNER_KEY_MANAGEMENT.md) | Software owner: signing key, backup, recovery, rotation |
+| [docs/LICENSE_SECURITY.md](docs/LICENSE_SECURITY.md) | Cryptography, threat model and offline limits |
+| [docs/DEVICE_BINDING.md](docs/DEVICE_BINDING.md) | Device id and license transfers |
+| [docs/LICENSE_TROUBLESHOOTING.md](docs/LICENSE_TROUBLESHOOTING.md) | License problems and their fixes |
+| [docs/UNINSTALLATION.md](docs/UNINSTALLATION.md) | Keep or delete data when uninstalling |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Future phases |
 | [CHANGELOG.md](CHANGELOG.md) | Release notes |
 

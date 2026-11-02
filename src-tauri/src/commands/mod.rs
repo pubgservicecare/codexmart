@@ -5,6 +5,7 @@
 pub mod app;
 pub mod backup;
 pub mod catalog;
+pub mod license;
 pub mod purchasing;
 pub mod reports;
 pub mod sales;

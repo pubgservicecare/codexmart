@@ -1,0 +1,28 @@
+[package]
+name = "codexmart-license"
+description = "CODE X MART licensing: request codes, signed activation keys, device identity and trial records"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+license.workspace = true
+publish = false
+
+[features]
+default = []
+# Signing support. Only the owner's License Generator enables this; the
+# customer application can verify licenses but cannot create them.
+issuer = []
+
+[dependencies]
+ed25519-dalek = { version = "2", features = ["zeroize"] }
+sha2 = "0.10"
+hmac = "0.12"
+chrono = "0.4"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+hex = "0.4"
+getrandom = "0.2"
+
+[dev-dependencies]
+# Integration tests issue licenses, so they need the signing side too.
+codexmart-license = { path = ".", features = ["issuer"] }
